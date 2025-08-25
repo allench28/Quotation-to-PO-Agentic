@@ -135,11 +135,15 @@ RESOURCE_ID=$(aws apigateway create-resource --rest-api-id ${API_ID} --parent-id
 aws apigateway put-method --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method POST --authorization-type NONE --region ${REGION}
 aws apigateway put-integration --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method POST --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/arn:aws:lambda:${REGION}:${AWS_ACCOUNT_ID}:function:${PROJECT_NAME}-processor/invocations --region ${REGION}
 
-# Setup CORS
+# Setup CORS for OPTIONS
 aws apigateway put-method --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method OPTIONS --authorization-type NONE --region ${REGION}
 aws apigateway put-integration --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method OPTIONS --type MOCK --request-templates "{\"application/json\":\"{\\\"statusCode\\\": 200}\"}" --region ${REGION}
 aws apigateway put-method-response --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method OPTIONS --status-code 200 --response-parameters "{\"method.response.header.Access-Control-Allow-Headers\":false,\"method.response.header.Access-Control-Allow-Methods\":false,\"method.response.header.Access-Control-Allow-Origin\":false}" --region ${REGION}
-aws apigateway put-integration-response --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method OPTIONS --status-code 200 --response-parameters "{\"method.response.header.Access-Control-Allow-Headers\":\"'Content-Type'\",\"method.response.header.Access-Control-Allow-Methods\":\"'GET,POST,OPTIONS'\",\"method.response.header.Access-Control-Allow-Origin\":\"'*'\"}" --region ${REGION}
+aws apigateway put-integration-response --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method OPTIONS --status-code 200 --response-parameters "{\"method.response.header.Access-Control-Allow-Headers\":\"'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'\",\"method.response.header.Access-Control-Allow-Methods\":\"'GET,POST,OPTIONS'\",\"method.response.header.Access-Control-Allow-Origin\":\"'*'\"}" --region ${REGION}
+
+# Setup CORS for POST method response
+aws apigateway put-method-response --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method POST --status-code 200 --response-parameters "{\"method.response.header.Access-Control-Allow-Origin\":false}" --region ${REGION}
+aws apigateway put-integration-response --rest-api-id ${API_ID} --resource-id ${RESOURCE_ID} --http-method POST --status-code 200 --response-parameters "{\"method.response.header.Access-Control-Allow-Origin\":\"'*'\"}" --region ${REGION}
 
 # Add Lambda permission and deploy
 aws lambda add-permission --function-name ${PROJECT_NAME}-processor --statement-id api-gateway-invoke-${TIMESTAMP} --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:${REGION}:${AWS_ACCOUNT_ID}:${API_ID}/*/*" --region ${REGION}

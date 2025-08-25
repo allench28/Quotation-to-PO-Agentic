@@ -152,6 +152,9 @@
             <button class="submit-btn" id="submitBtn" onclick="processFile()" disabled>
                 Submit
             </button>
+            <button class="choose-file-btn" onclick="testAPI()" style="background: #28a745;">
+                Test API
+            </button>
             <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx">
         </div>
         
@@ -296,6 +299,40 @@
                 reader.onload = () => resolve(reader.result.split(',')[1]);
                 reader.onerror = error => reject(error);
             });
+        }
+
+        async function testAPI() {
+            addMessage('Testing API connection...', 'ai');
+            
+            try {
+                console.log('Testing API endpoint:', API_ENDPOINT);
+                
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        test: 'connection',
+                        timestamp: Date.now()
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const data = await response.text();
+                console.log('Response data:', data);
+                
+                if (response.ok) {
+                    addMessage(`✅ API Test Success! Status: ${response.status}`, 'ai');
+                } else {
+                    addMessage(`⚠️ API Test Failed! Status: ${response.status}, Response: ${data}`, 'ai');
+                }
+            } catch (error) {
+                console.error('API Test Error:', error);
+                addMessage(`❌ API Test Error: ${error.message}`, 'ai');
+            }
         }
 
         function displayResults(data) {
