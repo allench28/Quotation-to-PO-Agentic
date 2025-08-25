@@ -6,11 +6,6 @@ echo "========================================================"
 
 PROJECT_NAME="quotation-processor-final"
 REGION="us-east-1"
-AWS_PROFILE="gikensakata"
-
-# Set AWS profile for all commands
-export AWS_PROFILE=$AWS_PROFILE
-echo "Using AWS Profile: $AWS_PROFILE"
 
 # Get AWS Account ID
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
