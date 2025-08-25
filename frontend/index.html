@@ -213,11 +213,10 @@
         }
         
         function clearPreviousResults() {
-            // Remove any previous result messages
+            // Clear all messages except the initial greeting
             const messages = chatMessages.querySelectorAll('.message');
             messages.forEach((msg, index) => {
-                if (index > 0 && msg.classList.contains('ai-message') && 
-                    msg.textContent.includes('Document processed successfully')) {
+                if (index > 0) {
                     msg.remove();
                 }
             });
@@ -244,11 +243,13 @@
                 const base64 = await fileToBase64(selectedFile);
                 const timestamp = Date.now();
                 
-                const response = await fetch(API_ENDPOINT, {
+                const response = await fetch(API_ENDPOINT + '?t=' + timestamp, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
                     },
                     body: JSON.stringify({
                         file: base64,
@@ -307,10 +308,13 @@
             try {
                 console.log('Testing API endpoint:', API_ENDPOINT);
                 
-                const response = await fetch(API_ENDPOINT, {
+                const response = await fetch(API_ENDPOINT + '?t=' + Date.now(), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
                     },
                     body: JSON.stringify({
                         test: 'connection',
