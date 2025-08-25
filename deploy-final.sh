@@ -35,11 +35,48 @@ aws s3api put-bucket-policy --bucket ${WEB_BUCKET} --policy "{\"Version\":\"2012
 
 # Create IAM role
 aws iam create-role --role-name ${PROJECT_NAME}-role --assume-role-policy-document file://lambda-trust-policy.json 2>/dev/null || true
-aws iam put-role-policy --role-name ${PROJECT_NAME}-role --policy-name ${PROJECT_NAME}-policy --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"dynamodb:PutItem\",\"dynamodb:GetItem\",\"bedrock:InvokeModel\",\"logs:CreateLogGroup\",\"logs:CreateLogStream\",\"logs:PutLogEvents\"],\"Resource\":\"*\"}]}"
+aws iam put-role-policy --role-name ${PROJECT_NAME}-role --policy-name ${PROJECT_NAME}-policy --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"dynamodb:PutItem\",\"dynamodb:GetItem\",\"bedrock:InvokeModel\",\"bedrock-agent:InvokePrompt\",\"logs:CreateLogGroup\",\"logs:CreateLogStream\",\"logs:PutLogEvents\"],\"Resource\":\"*\"}]}"
 
 sleep 15
 
-echo "📚 Step 2/5: Lambda Layer for PDF Generation"
+echo "🤖 Step 2/6: Bedrock Prompt Management"
+echo "======================================"
+
+# Create Bedrock prompt for quotation processing
+cat > bedrock-prompt.json << 'EOF'
+{
+  "name": "quotation-processor-prompt",
+  "description": "AI prompt for extracting quotation data and generating purchase orders",
+  "variants": [
+    {
+      "name": "default",
+      "templateType": "TEXT",
+      "templateConfiguration": {
+        "text": {
+          "text": "You are an AI assistant that extracts structured data from quotation documents and generates purchase orders.\n\nAnalyze the following document text and extract the following information in JSON format:\n\n{\n  \"company_name\": \"extracted company name\",\n  \"email\": \"company email address\",\n  \"phone\": \"company phone number\",\n  \"address\": \"company address\",\n  \"quote_number\": \"quotation number\",\n  \"date\": \"quotation date\",\n  \"items\": [\n    {\n      \"description\": \"item description\",\n      \"quantity\": \"quantity as number\",\n      \"unit_price\": \"unit price as number\"\n    }\n  ],\n  \"subtotal\": \"subtotal amount as number\",\n  \"total\": \"total amount as number\"\n}\n\nDocument text:\n{{document_text}}\n\nExtract the data accurately and return only the JSON object. If any field is not found, use null."
+        }
+      },
+      "modelId": "anthropic.claude-3-sonnet-20240229-v1:0",
+      "inferenceConfiguration": {
+        "text": {
+          "maxTokens": 2000,
+          "temperature": 0.1,
+          "topP": 0.9
+        }
+      }
+    }
+  ]
+}
+EOF
+
+# Create the prompt in Bedrock
+PROMPT_ARN=$(aws bedrock-agent create-prompt --cli-input-json file://bedrock-prompt.json --region ${REGION} --query 'arn' --output text)
+PROMPT_ID=$(echo $PROMPT_ARN | cut -d'/' -f2)
+
+echo "Created Bedrock prompt with ID: $PROMPT_ID"
+rm bedrock-prompt.json
+
+echo "📚 Step 3/6: Lambda Layer for PDF Generation"
 echo "============================================="
 
 # Check and install pip if needed
@@ -72,7 +109,7 @@ LAYER_ARN=$(aws lambda publish-layer-version --layer-name ${PROJECT_NAME}-pdf-la
 
 rm -rf lambda-layer pdf-layer.zip
 
-echo "⚡ Step 3/5: Lambda Function"
+echo "⚡ Step 4/6: Lambda Function"
 echo "============================"
 
 # Create Lambda function
@@ -80,11 +117,11 @@ cd backend
 zip ../lambda-function.zip document_processor.py simple_reports.py
 cd ..
 
-aws lambda create-function --function-name ${PROJECT_NAME}-processor --runtime python3.11 --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-role --handler document_processor.handler --zip-file fileb://lambda-function.zip --timeout 300 --environment Variables="{DYNAMODB_TABLE=${PROJECT_NAME}-quotations,S3_BUCKET=${DOCS_BUCKET}}" --layers ${LAYER_ARN} --region ${REGION} --no-cli-pager
+aws lambda create-function --function-name ${PROJECT_NAME}-processor --runtime python3.11 --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-role --handler document_processor.handler --zip-file fileb://lambda-function.zip --timeout 300 --environment Variables="{DYNAMODB_TABLE=${PROJECT_NAME}-quotations,S3_BUCKET=${DOCS_BUCKET},BEDROCK_PROMPT_ID=${PROMPT_ID}}" --layers ${LAYER_ARN} --region ${REGION} --no-cli-pager
 
 rm lambda-function.zip
 
-echo "🌐 Step 4/5: API Gateway with CORS"
+echo "🌐 Step 5/6: API Gateway with CORS"
 echo "=================================="
 
 # Create API Gateway
@@ -110,7 +147,7 @@ aws apigateway create-deployment --rest-api-id ${API_ID} --stage-name prod --reg
 
 API_ENDPOINT="https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/upload"
 
-echo "🎨 Step 5/5: Frontend Deployment"
+echo "🎨 Step 6/6: Frontend Deployment"
 echo "================================="
 
 # Update frontend with API endpoint
@@ -171,7 +208,12 @@ echo "⚡ API Gateway URL: ${API_ENDPOINT}"
 echo "📦 S3 Website URL: https://${WEB_BUCKET}.s3.${REGION}.amazonaws.com/index.html"
 echo "📊 DynamoDB Table: ${PROJECT_NAME}-quotations"
 echo "🗄️ Documents Bucket: ${DOCS_BUCKET}"
+echo "🤖 Bedrock Prompt ID: ${PROMPT_ID}"
 echo "🌍 Region: ${REGION}"
+echo ""
+echo "🔍 DEBUGGING INFO:"
+echo "API Gateway ID: ${API_ID}"
+echo "Lambda Function: ${PROJECT_NAME}-processor"
 echo ""
 echo "✅ Features:"
 echo "• PDF/Word document upload and processing"
