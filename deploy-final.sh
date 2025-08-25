@@ -287,10 +287,3 @@ echo "• CORS-enabled API Gateway"
 echo "• CloudFront CDN distribution"
 echo ""
 echo "🚀 Your AI Quotation Processor is ready!"
-
-# Git operations
-echo "📤 Pushing to GitHub..."
-git add .
-git commit -m "Deploy: Updated deployment script and frontend cache prevention"
-git push origin main || git push origin master
-echo "✅ Changes pushed to GitHub!"
