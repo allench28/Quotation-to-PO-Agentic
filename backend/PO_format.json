@@ -1,0 +1,39 @@
+{
+    "header": {
+      "company_logo": "image_path_or_url",
+      "supplier": {
+        "name": "",
+        "address": "",
+        "city": "",
+        "country": "",
+        "postcode": "",
+        "phone": ""
+      },
+      "buyer": {
+        "name": "",
+        "address": "",
+        "city": "",
+        "country": "",
+        "postcode": "",
+        "phone": ""
+      }
+    },
+    "purchase_order": {
+      "number": "",
+      "date": ""
+    },
+    "items": [
+      {
+        "description": "",
+        "unit_price": 0,
+        "quantity": 0,
+        "total": 0
+      }
+    ],
+    "summary": {
+      "subtotal": 0,
+      "tax": 0,
+      "grand_total": 0
+    }
+  }
+  

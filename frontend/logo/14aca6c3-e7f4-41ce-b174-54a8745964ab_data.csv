@@ -1,0 +1,28 @@
+Report Type,Quotation Processing Data
+Generated,2025-08-21 08:30:57
+
+Section,Extracted Information
+Company,ABC Stationery Supplies Pte Ltd.
+Email,contact@abcstationery.com
+Phone,+65 6123 4567
+Address,"10 Anson Road, #15-01 International Plaza Singapore 079903"
+Quote Number,QTN-2025-001
+Date,2025-08-18
+Subtotal,135.0
+Tax,0
+Total,135.0
+
+Items
+Description,Quantity,Unit Price,Total Amount
+Pen Blue Ink Ballpoint Pen,50,0.5,25.0
+"Notebook A4 Size, 200 Pages",30,2.0,60.0
+Stapler Heavy Duty Stapler,10,5.0,50.0
+
+Section,Purchase Order
+PO Number,PO-20250821-73cc1fe0
+Vendor,ABC Stationery Supplies Pte Ltd.
+Vendor Email,contact@abcstationery.com
+Vendor Phone,+65 6123 4567
+Vendor Address,"10 Anson Road, #15-01 International Plaza Singapore 079903"
+Status,pending_approval
+Total Amount,135.0

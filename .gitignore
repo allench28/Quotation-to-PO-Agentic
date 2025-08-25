@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+*.zip
+*.pyc
+__pycache__/
+
+# AWS
+.aws/
+cred.txt
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
