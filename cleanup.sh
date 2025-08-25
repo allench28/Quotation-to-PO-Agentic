@@ -101,7 +101,23 @@ echo "Deleting DynamoDB table: ${PROJECT_NAME}-quotations"
 aws dynamodb delete-table --table-name ${PROJECT_NAME}-quotations --region ${REGION} --no-cli-pager 2>/dev/null || echo "DynamoDB table not found"
 
 echo ""
-echo "🗑️  Step 6/6: Delete IAM Role and Policies"
+echo "🗑️  Step 6/7: Delete Bedrock Prompts"
+echo "=================================="
+
+# Delete Bedrock prompts
+PROMPT_IDS=$(aws bedrock-agent list-prompts --query "promptSummaries[?contains(name, 'quotation-processor-prompt')].id" --output text --region ${REGION} --no-cli-pager 2>/dev/null || true)
+
+if [ ! -z "$PROMPT_IDS" ]; then
+    for PROMPT_ID in $PROMPT_IDS; do
+        echo "Deleting Bedrock prompt: $PROMPT_ID"
+        aws bedrock-agent delete-prompt --prompt-identifier $PROMPT_ID --region ${REGION} --no-cli-pager 2>/dev/null || true
+    done
+else
+    echo "No Bedrock prompts found"
+fi
+
+echo ""
+echo "🗑️  Step 7/7: Delete IAM Role and Policies"
 echo "==========================================="
 
 # Delete role policy first
@@ -121,6 +137,7 @@ echo "• API Gateway (deleted)"
 echo "• Lambda function and layer (deleted)"
 echo "• S3 buckets (emptied and deleted)"
 echo "• DynamoDB table (deleted)"
+echo "• Bedrock prompts (deleted)"
 echo "• IAM role and policies (deleted)"
 echo ""
 echo "ℹ️  Note: CloudFront distributions are disabled but not deleted"

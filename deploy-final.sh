@@ -43,9 +43,9 @@ echo "🤖 Step 2/6: Bedrock Prompt Management"
 echo "======================================"
 
 # Create Bedrock prompt for quotation processing
-cat > bedrock-prompt.json << 'EOF'
+cat > bedrock-prompt.json << EOF
 {
-  "name": "quotation-processor-prompt",
+  "name": "quotation-processor-prompt-${TIMESTAMP}",
   "description": "AI prompt for extracting quotation data and generating purchase orders",
   "variants": [
     {
