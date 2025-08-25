@@ -151,9 +151,101 @@ echo "🎨 Step 6/6: Frontend Deployment"
 echo "================================="
 
 # Update frontend with API endpoint
-sed -i.bak "s|YOUR_API_GATEWAY_ENDPOINT|${API_ENDPOINT}|g" frontend/index.html
+echo "Updating frontend with API endpoint: ${API_ENDPOINT}"
+cp frontend/index.html frontend/index.html.backup
+sed "s|YOUR_API_GATEWAY_ENDPOINT|${API_ENDPOINT}|g" frontend/index.html.backup > frontend/index.html
+
+# Verify the replacement worked
+if grep -q "${API_ENDPOINT}" frontend/index.html; then
+    echo "✅ API endpoint successfully updated in frontend"
+else
+    echo "❌ Failed to update API endpoint in frontend"
+    exit 1
+fi
 
 # Upload frontend
+aws s3 sync frontend/ s3://${WEB_BUCKET}/
+
+# Verify upload
+echo "Verifying frontend upload..."
+aws s3 ls s3://${WEB_BUCKET}/index.html
+
+# Create CloudFront distribution
+cat > cf-config.json << EOF
+{
+  "CallerReference": "${TIMESTAMP}",
+  "Comment": "${PROJECT_NAME} frontend",
+  "DefaultRootObject": "index.html",
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "S3-${WEB_BUCKET}",
+        "DomainName": "${WEB_BUCKET}.s3.${REGION}.amazonaws.com",
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginProtocolPolicy": "https-only"
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-${WEB_BUCKET}",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "TrustedSigners": {
+      "Enabled": false,
+      "Quantity": 0
+    },
+    "ForwardedValues": {
+      "QueryString": false,
+      "Cookies": {
+        "Forward": "none"
+      }
+    },
+    "MinTTL": 0,
+    "Compress": true
+  },
+  "Enabled": true,
+  "PriceClass": "PriceClass_100"
+}
+EOF
+
+CLOUDFRONT_DOMAIN=$(aws cloudfront create-distribution --distribution-config file://cf-config.json --query "Distribution.DomainName" --output text)
+
+rm cf-config.json
+
+echo "🎉 DEPLOYMENT COMPLETE!"
+echo "======================="
+echo "🌐 CloudFront URL: https://${CLOUDFRONT_DOMAIN}"
+echo "⚡ API Gateway URL: ${API_ENDPOINT}"
+echo "📦 S3 Website URL: https://${WEB_BUCKET}.s3.${REGION}.amazonaws.com/index.html"
+echo "📊 DynamoDB Table: ${PROJECT_NAME}-quotations"
+echo "🗄️ Documents Bucket: ${DOCS_BUCKET}"
+echo "🤖 Bedrock Prompt ID: ${PROMPT_ID}"
+echo "🌍 Region: ${REGION}"
+echo ""
+echo "🔍 DEBUGGING INFO:"
+echo "API Gateway ID: ${API_ID}"
+echo "Lambda Function: ${PROJECT_NAME}-processor"
+echo ""
+echo "✅ Features:"
+echo "• PDF/Word document upload and processing"
+echo "• AI-powered data extraction using Bedrock Claude 3 Sonnet"
+echo "• Automatic purchase order generation"
+echo "• PDF report generation with download links"
+echo "• Data storage in DynamoDB"
+echo "• CORS-enabled API Gateway"
+echo "• CloudFront CDN distribution"
+echo "• Bedrock Prompt Management"
+echo ""
+echo "🚀 Your AI Quotation Processor is ready!"
+echo ""
+echo "📝 NEXT STEPS:"
+echo "1. Test the S3 website URL first: https://${WEB_BUCKET}.s3.${REGION}.amazonaws.com/index.html"
+echo "2. If S3 works, use CloudFront URL for production"
+echo "3. Check browser console for any CORS errors"
+echo "4. Monitor Lambda logs in CloudWatch if issues persist" Upload frontend
 aws s3 sync frontend/ s3://${WEB_BUCKET}/
 
 # Create CloudFront distribution
