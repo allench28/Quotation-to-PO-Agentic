@@ -6,6 +6,11 @@ echo "============================================="
 
 PROJECT_NAME="quotation-processor-final"
 REGION="us-east-1"
+AWS_PROFILE="gikensakata"
+
+# Set AWS profile for all commands
+export AWS_PROFILE=$AWS_PROFILE
+echo "Using AWS Profile: $AWS_PROFILE"
 
 echo "⚠️  WARNING: This will delete ALL resources created by deploy-final.sh"
 echo "This includes S3 buckets, Lambda functions, API Gateway, CloudFront, DynamoDB, and IAM roles."
