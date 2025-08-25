@@ -42,6 +42,24 @@ sleep 15
 echo "📚 Step 2/5: Lambda Layer for PDF Generation"
 echo "============================================="
 
+# Check and install pip if needed
+if ! command -v pip &> /dev/null; then
+    echo "Installing pip..."
+    if command -v python3 &> /dev/null; then
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        python3 get-pip.py --user
+        rm get-pip.py
+        export PATH="$HOME/.local/bin:$PATH"
+    elif command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y python3-pip
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y python3-pip
+    else
+        echo "❌ Cannot install pip. Please install Python and pip manually."
+        exit 1
+    fi
+fi
+
 # Create Lambda layer with PDF dependencies
 mkdir -p lambda-layer/python
 cd lambda-layer/python
@@ -62,7 +80,7 @@ cd backend
 zip ../lambda-function.zip document_processor.py simple_reports.py
 cd ..
 
-aws lambda create-function --function-name ${PROJECT_NAME}-processor --runtime python3.11 --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-role --handler document_processor.handler --zip-file fileb://lambda-function.zip --timeout 300 --environment Variables="{DYNAMODB_TABLE=${PROJECT_NAME}-quotations,S3_BUCKET=${DOCS_BUCKET}}" --layers ${LAYER_ARN} --region ${REGION}
+aws lambda create-function --function-name ${PROJECT_NAME}-processor --runtime python3.11 --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-role --handler document_processor.handler --zip-file fileb://lambda-function.zip --timeout 300 --environment Variables="{DYNAMODB_TABLE=${PROJECT_NAME}-quotations,S3_BUCKET=${DOCS_BUCKET}}" --layers ${LAYER_ARN} --region ${REGION} --no-cli-pager
 
 rm lambda-function.zip
 

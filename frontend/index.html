@@ -208,9 +208,30 @@
             submitBtn.disabled = false;
             addMessage(`File "${file.name}" selected. Click Submit to process.`, 'ai');
         }
+        
+        function clearPreviousResults() {
+            // Remove any previous result messages
+            const messages = chatMessages.querySelectorAll('.message');
+            messages.forEach((msg, index) => {
+                if (index > 0 && msg.classList.contains('ai-message') && 
+                    msg.textContent.includes('Document processed successfully')) {
+                    msg.remove();
+                }
+            });
+        }
+        
+        function resetFileSelection() {
+            selectedFile = null;
+            fileName.textContent = 'No file selected';
+            fileInput.value = '';
+            submitBtn.disabled = true;
+        }
 
         async function processFile() {
             if (!selectedFile) return;
+            
+            // Clear previous results and reset state
+            clearPreviousResults();
             
             addMessage(`Processing "${selectedFile.name}"...`, 'user');
             loading.style.display = 'block';
@@ -218,16 +239,19 @@
 
             try {
                 const base64 = await fileToBase64(selectedFile);
+                const timestamp = Date.now();
                 
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
                     },
                     body: JSON.stringify({
                         file: base64,
                         fileName: selectedFile.name,
-                        fileType: selectedFile.type
+                        fileType: selectedFile.type,
+                        timestamp: timestamp
                     })
                 });
 
@@ -243,6 +267,8 @@
             } finally {
                 loading.style.display = 'none';
                 submitBtn.disabled = false;
+                // Reset file selection
+                resetFileSelection();
             }
         }
 
@@ -277,8 +303,9 @@
             const purchaseOrder = data.purchaseOrder;
             const reports = data.reports || {};
             const summary = data.summary || {};
+            const timestamp = new Date().toLocaleString();
 
-            let resultText = `<strong>✅ Document processed successfully!</strong><br><br>`;
+            let resultText = `<strong>✅ Document processed successfully!</strong> (${timestamp})<br><br>`;
             resultText += `<strong>Extracted Information:</strong><br>`;
             resultText += `• Company: ${extractedData.company_name || 'N/A'}<br>`;
             resultText += `• Email: ${extractedData.email || 'N/A'}<br>`;
@@ -308,10 +335,12 @@
             if (reports.pdfUrl || reports.csvUrl) {
                 resultText += `<strong>📄 Generated Reports:</strong><br>`;
                 if (reports.pdfUrl) {
-                    resultText += `• <a href="${reports.pdfUrl}" target="_blank">Download PDF Report</a><br>`;
+                    const pdfLink = `${reports.pdfUrl}?t=${Date.now()}`;
+                    resultText += `• <a href="${pdfLink}" target="_blank">Download PDF Report</a><br>`;
                 }
                 if (reports.csvUrl) {
-                    resultText += `• <a href="${reports.csvUrl}" target="_blank">Download CSV Data</a><br>`;
+                    const csvLink = `${reports.csvUrl}?t=${Date.now()}`;
+                    resultText += `• <a href="${csvLink}" target="_blank">Download CSV Data</a><br>`;
                 }
                 resultText += `<br>`;
             }
